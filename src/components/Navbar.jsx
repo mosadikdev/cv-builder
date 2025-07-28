@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { FaUserCircle } from "react-icons/fa";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -10,40 +11,53 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-      <Link to="/" className="text-2xl font-bold text-blue-600">
-        CV Builder
-      </Link>
+    <nav className="bg-gradient-to-r from-indigo-600 to-blue-500 shadow-xl px-6 py-3 flex justify-between items-center sticky top-0 z-50">
+      <div className="flex items-center">
+        <Link to="/" className="flex items-center">
+          <div className="bg-white p-1 rounded-lg mr-3">
+            <div className="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10" />
+          </div>
+          <span className="text-2xl font-bold text-white tracking-tight">
+            CV<span className="text-amber-300">Builder</span>
+          </span>
+        </Link>
+      </div>
 
-      <div className="space-x-4">
+      <div className="flex items-center space-x-6">
         {!isAuthenticated ? (
           <>
             <Link
               to="/login"
-              className="text-gray-700 hover:text-blue-600 font-medium"
+              className="text-white hover:text-amber-200 font-medium px-3 py-1.5 rounded-md transition-all duration-300 hover:bg-indigo-700"
             >
               Login
             </Link>
             <Link
               to="/register"
-              className="text-gray-700 hover:text-blue-600 font-medium"
+              className="bg-amber-400 text-indigo-800 hover:bg-amber-300 font-semibold px-4 py-1.5 rounded-md shadow-md transition-all duration-300 hover:shadow-lg"
             >
               Register
             </Link>
           </>
         ) : (
           <>
+            <div className="flex items-center space-x-2">
+              <FaUserCircle className="text-white text-xl" />
+              <span className="text-white font-medium">
+                {JSON.parse(localStorage.getItem("user"))?.email}
+              </span>
+            </div>
             <Link
-              to="/dashboard"
-              className="text-gray-700 hover:text-blue-600 font-medium"
+              to="/"
+              className="text-white hover:text-amber-200 font-medium px-3 py-1.5 rounded-md transition-all duration-300 hover:bg-indigo-700"
             >
               Dashboard
             </Link>
             <button
               onClick={handleLogout}
-              className="text-red-600 hover:text-red-800 font-medium"
+              className="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-1.5 rounded-md shadow-md transition-all duration-300 flex items-center"
             >
-              Logout
+              <span>Logout</span>
             </button>
           </>
         )}
