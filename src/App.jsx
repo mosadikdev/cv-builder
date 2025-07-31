@@ -20,7 +20,10 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Navbar isAuthenticated={isAuthenticated} updateAuthStatus={updateAuthStatus} />
+      <Navbar 
+        isAuthenticated={isAuthenticated} 
+        updateAuthStatus={updateAuthStatus} 
+      />
       <Routes>
         <Route 
           path="/" 

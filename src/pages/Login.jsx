@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
-const Login = () => {
+const Login = ({ updateAuthStatus }) => { 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -14,6 +14,7 @@ const Login = () => {
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (user?.email === form.email && user?.password === form.password) {
+      updateAuthStatus(true);
       navigate("/dashboard");
     } else {
       setError("Incorrect email or password.");

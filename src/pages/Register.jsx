@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaUserPlus, FaEye, FaEyeSlash } from "react-icons/fa";
 
-const Register = () => {
+const Register = ({ updateAuthStatus }) => { 
   const [form, setForm] = useState({ 
     email: "", 
     password: "",
@@ -35,6 +35,8 @@ const Register = () => {
     };
     
     localStorage.setItem("user", JSON.stringify(userData));
+
+    updateAuthStatus(true);
     navigate("/dashboard");
   };
 

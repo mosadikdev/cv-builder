@@ -1,13 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 
-const Navbar = () => {
+const Navbar = ({ isAuthenticated, updateAuthStatus }) => { 
   const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem("user");
 
   const handleLogout = () => {
     localStorage.removeItem("user");
-    navigate("/login");
+    updateAuthStatus(false); 
+    navigate("/");
   };
 
   return (
@@ -24,7 +24,7 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center space-x-6">
-        {!isAuthenticated ? (
+        {!isAuthenticated ? ( 
           <>
             <Link
               to="/login"
@@ -48,7 +48,7 @@ const Navbar = () => {
               </span>
             </div>
             <Link
-              to="/"
+              to="/dashboard"
               className="text-white hover:text-amber-200 font-medium px-3 py-1.5 rounded-md transition-all duration-300 hover:bg-indigo-700"
             >
               Dashboard
