@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FaFilePdf, FaPlus, FaDownload, FaMagic } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaFilePdf, FaPlus, FaDownload, FaMagic, FaSave, FaCheck } from 'react-icons/fa';
 import CVForm from '../components/CVForm';
 import TemplateSelection from '../components/TemplateSelection';
 import PreviewCV from '../components/PreviewCV';
@@ -8,6 +8,7 @@ const Dashboard = () => {
   const [step, setStep] = useState('dashboard'); 
   const [cvData, setCvData] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [cvList, setCvList] = useState([]);
   
   const user = JSON.parse(localStorage.getItem('user')) || {
     name: 'mohamed',
@@ -35,8 +36,6 @@ const Dashboard = () => {
     alert('PDF generated successfully!');
   };
 
- 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow-xl">
@@ -46,7 +45,12 @@ const Dashboard = () => {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {step === 'dashboard' && (
-          <DashboardHome user={user} onStartNewCV={handleStartNewCV} />
+          <DashboardHome 
+            user={user} 
+            onStartNewCV={handleStartNewCV} 
+            cvList={cvList}
+            setCvList={setCvList}
+          />
         )}
         
         {step === 'form' && (
@@ -76,18 +80,93 @@ const Dashboard = () => {
   );
 };
 
-const DashboardHome = ({ user, onStartNewCV }) => {
+const DashboardHome = ({ user, onStartNewCV, cvList, setCvList }) => {
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const savedCVs = JSON.parse(localStorage.getItem('cvs')) || [];
+    setCvList(savedCVs);
+    setLoading(false);
+  }, [setCvList]);
+
   const stats = [
-    { label: 'Total CVs Created', value: '0', change: '+0' },
-    { label: 'Downloads', value: '0', change: '+0' },
-    { label: 'Templates Used', value: '0', change: '+0' },
-    { label: 'Account Age', value: '0 months', change: '' },
+    { 
+      label: 'Total CVs Created', 
+      value: cvList.length
+    },
+    { 
+      label: 'Downloads', 
+      value: cvList.filter(cv => cv.downloaded).length
+    },
+    { 
+      label: 'Templates Used', 
+      value: [...new Set(cvList.map(cv => cv.template))].length
+    },
+    { 
+      label: 'Account Age', 
+      value: user.joined 
+        ? `${Math.floor((new Date() - new Date(user.joined)) / (1000 * 60 * 60 * 24 * 30))} months` 
+        : 'N/A'
+    },
   ];
 
-  const recentActivity = [
-    { action: 'Created', title: 'my first CV', time: '2 hours ago' },
-    { action: 'Downloaded', title: 'my second CV', time: '1 day ago' },
-  ];
+  const recentActivity = cvList
+    .slice(-3)
+    .reverse()
+    .map(cv => ({
+      action: 'Created',
+      title: cv.title,
+      time: formatTimeAgo(cv.createdAt)
+    }));
+
+    function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+  }
+
+
+  const popularTemplates = Array.from(
+    cvList.reduce((acc, cv) => {
+      if (cv.template) {
+        acc.set(cv.template, (acc.get(cv.template) || 0) + 1);
+      }
+      return acc;
+    }, new Map())
+  )
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 3)
+  .map(([name]) => ({
+    name,
+    color: getTemplateColor(name)
+  }));
+
+
+  function getTemplateColor(name) {
+    const colors = {
+      'Modern Professional': 'from-indigo-600 to-blue-500',
+      'Creative Designer': 'from-purple-600 to-indigo-500',
+      'Minimalist': 'from-gray-700 to-gray-500',
+      'Corporate Executive': 'from-teal-600 to-cyan-500',
+      'Tech Specialist': 'from-blue-700 to-indigo-600',
+      'Academic': 'from-green-600 to-emerald-500',
+    };
+    return colors[name] || 'from-indigo-600 to-blue-500';
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -122,11 +201,6 @@ const DashboardHome = ({ user, onStartNewCV }) => {
                 <p className="text-gray-600 text-sm mb-1">{stat.label}</p>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-800">{stat.value}</span>
-                  {stat.change && (
-                    <span className="ml-3 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      {stat.change} this month
-                    </span>
-                  )}
                 </div>
               </div>
             ))}
@@ -134,54 +208,63 @@ const DashboardHome = ({ user, onStartNewCV }) => {
           
           <div className="bg-white rounded-xl shadow-md p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Activity</h3>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-4">
-                  <div className="bg-indigo-100 text-indigo-800 p-3 rounded-full mt-1">
-                    <FaFilePdf />
+            {recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-4">
+                    <div className="bg-indigo-100 text-indigo-800 p-3 rounded-full mt-1">
+                      <FaFilePdf />
+                    </div>
+                    <div>
+                      <p className="text-gray-800 font-medium">{activity.title}</p>
+                      <p className="text-gray-600 text-sm">
+                        {activity.action} • {activity.time}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-gray-800 font-medium">{activity.title}</p>
-                    <p className="text-gray-600 text-sm">
-                      {activity.action} • {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No recent activity yet</p>
+                <p className="mt-2">Create your first CV to get started</p>
+              </div>
+            )}
           </div>
         </div>
         
         <div className="bg-white rounded-xl shadow-md p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-4">Popular Templates</h3>
-          <p className="text-gray-600 mb-6">Browse our most popular CV templates</p>
+          <p className="text-gray-600 mb-6">Your most used CV templates</p>
           
-          <div className="space-y-4">
-            {[
-              { name: 'Modern Professional', color: 'from-indigo-600 to-blue-500' },
-              { name: 'Creative Designer', color: 'from-purple-600 to-indigo-500' },
-              { name: 'Minimalist', color: 'from-gray-700 to-gray-500' },
-            ].map((template, index) => (
-              <div 
-                key={index} 
-                className="border border-gray-200 rounded-xl overflow-hidden cursor-pointer transition hover:shadow-md"
-              >
-                <div className={`h-32 bg-gradient-to-r ${template.color} relative`}>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">{template.name}</span>
+          {popularTemplates.length > 0 ? (
+            <div className="space-y-4">
+              {popularTemplates.map((template, index) => (
+                <div 
+                  key={index} 
+                  className="border border-gray-200 rounded-xl overflow-hidden cursor-pointer transition hover:shadow-md"
+                >
+                  <div className={`h-32 bg-gradient-to-r ${template.color} relative`}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">{template.name}</span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <button 
+                      className="w-full py-2 text-indigo-600 font-medium hover:bg-indigo-50 rounded-lg"
+                      onClick={() => alert(`Previewing ${template.name} template`)}
+                    >
+                      Preview Template
+                    </button>
                   </div>
                 </div>
-                <div className="p-4">
-                  <button 
-                    className="w-full py-2 text-indigo-600 font-medium hover:bg-indigo-50 rounded-lg"
-                    onClick={() => alert('Preview template')}
-                  >
-                    Preview Template
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No templates used yet</p>
+            </div>
+          )}
           
           <div className="mt-6">
             <button 
@@ -214,6 +297,25 @@ const DashboardHome = ({ user, onStartNewCV }) => {
 };
 
 const PreviewSection = ({ cvData, template, onBack, onDownload }) => {
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    const cvs = JSON.parse(localStorage.getItem('cvs')) || [];
+    const newCV = {
+      id: Date.now(),
+      title: cvData.personal.jobTitle || 'Untitled CV',
+      template: template?.name || 'No template',
+      createdAt: new Date().toISOString(),
+      data: cvData,
+      templateData: template
+    };
+    
+    localStorage.setItem('cvs', JSON.stringify([...cvs, newCV]));
+    setSaved(true);
+    
+    setTimeout(() => setSaved(false), 3000);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -224,6 +326,27 @@ const PreviewSection = ({ cvData, template, onBack, onDownload }) => {
             className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
             Back to Templates
+          </button>
+          <button
+            onClick={handleSave}
+            className={`flex items-center px-4 py-2 rounded-lg ${
+              saved 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            disabled={saved}
+          >
+            {saved ? (
+              <>
+                <FaCheck className="mr-2" />
+                Saved!
+              </>
+            ) : (
+              <>
+                <FaSave className="mr-2" />
+                Save CV
+              </>
+            )}
           </button>
           <button
             onClick={onDownload}
