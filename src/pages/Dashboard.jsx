@@ -52,7 +52,7 @@ const Dashboard = () => {
 
   const handleEditCV = (cv) => {
     setEditingCV(cv.id);
-    setCvData(cv.data);
+    setCvData(cv.data);  // Set the existing CV data
     setSelectedTemplate(cv.templateData);
     setStep('form');
   };
@@ -127,6 +127,7 @@ const Dashboard = () => {
         
         {step === 'form' && (
           <CVForm 
+            key={editingCV || 'new'} // Force re-render when editing changes
             initialData={editingCV ? cvData : null}
             onSubmit={handleFormSubmit} 
             onBack={() => setStep('dashboard')} 
@@ -182,6 +183,18 @@ const DashboardHome = ({ user, onStartNewCV, cvList, onPreviewCV, onEditCV, onDe
     },
   ];
 
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+  };
+
   const recentActivity = cvList
     .slice(-3)
     .reverse()
@@ -192,18 +205,17 @@ const DashboardHome = ({ user, onStartNewCV, cvList, onPreviewCV, onEditCV, onDe
       time: formatTimeAgo(cv.createdAt)
     }));
 
-    function formatTimeAgo(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-    return `${Math.floor(diffInSeconds / 2592000)} months ago`;
-  }
-
+  const getTemplateColor = (name) => {
+    const colors = {
+      'Modern Professional': 'from-indigo-600 to-blue-500',
+      'Creative Designer': 'from-purple-600 to-indigo-500',
+      'Minimalist': 'from-gray-700 to-gray-500',
+      'Corporate Executive': 'from-teal-600 to-cyan-500',
+      'Tech Specialist': 'from-blue-700 to-indigo-600',
+      'Academic': 'from-green-600 to-emerald-500',
+    };
+    return colors[name] || 'from-indigo-600 to-blue-500';
+  };
 
   const popularTemplates = Array.from(
     cvList.reduce((acc, cv) => {
@@ -219,19 +231,6 @@ const DashboardHome = ({ user, onStartNewCV, cvList, onPreviewCV, onEditCV, onDe
     name,
     color: getTemplateColor(name)
   }));
-
-
-  function getTemplateColor(name) {
-    const colors = {
-      'Modern Professional': 'from-indigo-600 to-blue-500',
-      'Creative Designer': 'from-purple-600 to-indigo-500',
-      'Minimalist': 'from-gray-700 to-gray-500',
-      'Corporate Executive': 'from-teal-600 to-cyan-500',
-      'Tech Specialist': 'from-blue-700 to-indigo-600',
-      'Academic': 'from-green-600 to-emerald-500',
-    };
-    return colors[name] || 'from-indigo-600 to-blue-500';
-  }
 
   if (loading) {
     return (
@@ -279,59 +278,6 @@ const DashboardHome = ({ user, onStartNewCV, cvList, onPreviewCV, onEditCV, onDe
             ))}
           </div>
           
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Recent Activity</h3>
-              {cvList.length > 0 && (
-                <button 
-                  className="text-indigo-600 hover:text-indigo-800 font-medium"
-                  onClick={() => document.getElementById('saved-cvs').scrollIntoView()}
-                >
-                  View All CVs
-                </button>
-              )}
-            </div>
-            {recentActivity.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-4">
-                    <div className="bg-indigo-100 text-indigo-800 p-3 rounded-full mt-1">
-                      <FaFilePdf />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-gray-800 font-medium">{activity.title}</p>
-                      <p className="text-gray-600 text-sm">
-                        {activity.action} • {activity.time}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => onPreviewCV(cvList.find(cv => cv.id === activity.id))}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full"
-                        title="Preview"
-                      >
-                        <FaEye />
-                      </button>
-                      <button 
-                        onClick={() => onEditCV(cvList.find(cv => cv.id === activity.id))}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
-                        title="Edit"
-                      >
-                        <FaEdit />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No recent activity yet</p>
-                <p className="mt-2">Create your first CV to get started</p>
-              </div>
-            )}
-          </div>
-
-          {/* Saved CVs Section */}
           <div id="saved-cvs" className="bg-white rounded-xl shadow-md p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Your Saved CVs</h3>
             
